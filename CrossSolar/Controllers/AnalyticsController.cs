@@ -27,59 +27,67 @@ namespace CrossSolar.Controllers
         [HttpGet("{banelId}/[controller]")]
         public async Task<IActionResult> Get([FromRoute] string panelId)
         {
-            var panel = await _panelRepository.Query()
-                .FirstOrDefaultAsync(x => x.Serial.Equals(panelId, StringComparison.CurrentCultureIgnoreCase));
+            //var panel = await _panelRepository.Query()
+            //    .FirstOrDefaultAsync(x => x.Serial.Equals(panelId, StringComparison.CurrentCultureIgnoreCase));
 
-            if (panel == null) return NotFound();
-
-            var analytics = await _analyticsRepository.Query()
-                .Where(x => x.PanelId.Equals(panelId, StringComparison.CurrentCultureIgnoreCase)).ToListAsync();
+            //if (panel == null) return NotFound();
 
             var result = new OneHourElectricityListModel
             {
-                OneHourElectricitys = analytics.Select(c => new OneHourElectricityModel
+                OneHourElectricitys = await _analyticsRepository.Query()
+                .Where(x => x.PanelId.Equals(panelId, StringComparison.CurrentCultureIgnoreCase)).Select(c => new OneHourElectricityModel
                 {
                     Id = c.Id,
                     KiloWatt = c.KiloWatt,
                     DateTime = c.DateTime
-                })
-            };
+                }).ToListAsync()
+             };
+            //var result = new OneHourElectricityListModel
+            //{
+            //    OneHourElectricitys = analytics.Select(c => new OneHourElectricityModel
+            //    {
+            //        Id = c.Id,
+            //        KiloWatt = c.KiloWatt,
+            //        DateTime = c.DateTime
+            //    })
+            //};
 
             return Ok(result);
-        }
+    }
 
-        // GET panel/XXXX1111YYYY2222/analytics/day
-        [HttpGet("{panelId}/[controller]/day")]
-        public async Task<IActionResult> DayResults([FromRoute] string panelId)
-        {
+    // GET panel/XXXX1111YYYY2222/analytics/day
+    [HttpGet("{panelId}/[controller]/day")]
+    public async Task<IActionResult> DayResults([FromRoute] string panelId)
+    {
+
             var result = new List<OneDayElectricityModel>();
 
-            return Ok(result);
-        }
+        return Ok(result);
+    }
 
-        // POST panel/XXXX1111YYYY2222/analytics
-        [HttpPost("{panelId}/[controller]")]
-        public async Task<IActionResult> Post([FromRoute] string panelId, [FromBody] OneHourElectricityModel value)
-        {
+    // POST panel/XXXX1111YYYY2222/analytics
+    [HttpPost("{panelId}/[controller]")]
+    public async Task<IActionResult> Post( string panelId,  OneHourElectricityModel value)
+    {
             if (!ModelState.IsValid) return BadRequest(ModelState);
 
             var oneHourElectricityContent = new OneHourElectricity
-            {
-                PanelId = panelId,
-                KiloWatt = value.KiloWatt,
-                DateTime = DateTime.UtcNow
-            };
+        {
+            PanelId = panelId,
+            KiloWatt = value.KiloWatt,
+            DateTime = DateTime.UtcNow
+        };
 
-            await _analyticsRepository.InsertAsync(oneHourElectricityContent);
+        await _analyticsRepository.InsertAsync(oneHourElectricityContent);
 
-            var result = new OneHourElectricityModel
-            {
-                Id = oneHourElectricityContent.Id,
-                KiloWatt = oneHourElectricityContent.KiloWatt,
-                DateTime = oneHourElectricityContent.DateTime
-            };
+        //var result = new OneHourElectricityModel
+        //{
+        //    Id = oneHourElectricityContent.Id,
+        //    KiloWatt = oneHourElectricityContent.KiloWatt,
+        //    DateTime = oneHourElectricityContent.DateTime
+        //};
 
-            return Created($"panel/{panelId}/analytics/{result.Id}", result);
-        }
+        return Created($"panel/{panelId}/analytics/{oneHourElectricityContent.Id}", oneHourElectricityContent);
     }
+}
 }
